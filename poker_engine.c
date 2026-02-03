@@ -5,19 +5,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-// =========================================================
-// SECTION 0: WEB COMPATIBILITY (THE FIX)
-// =========================================================
 
-// Only include Emscripten if we are actually compiling for the Web
-#ifdef __EMSCRIPTEN__
-    #include <emscripten/emscripten.h>
-#else
-    // If compiling with GCC/Clang, define a dummy macro so it doesn't crash
-    #define EMSCRIPTEN_KEEPALIVE
-#endif
-
-// ... (Rest of your code continues below)
 
 // =========================================================
 // SECTION 1: CONSTANTS & DATA STRUCTURES
