@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monolith Poker</title>
+    <style>
+        body { background: #222; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        input { padding: 10px; border-radius: 5px; text-align: center; }
+        button { padding: 15px 30px; background: gold; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        table { margin: 20px auto; width: 60%; border-collapse: collapse; }
+        td, th { border: 1px solid #555; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>♠️ Monolith C Engine</h1>
+    
+    <h3>Board</h3>
+    <input type="text" id="board" placeholder="Ks Qs 9d" value="">
+
+    <h3>Hands</h3>
+    <div id="inputs">
+        <input type="text" class="hand" value="As Ks">
+        <input type="text" class="hand" value="Td Tc">
+    </div>
+
+    <button onclick="run()">CALCULATE</button>
+    <div id="results"></div>
+
+    <script src="poker.js"></script>
+    <script>
+        let Module = null;
+        createPokerModule().then(m => { Module = m; console.log("Engine Loaded"); });
+
+        function run() {
+            if (!Module) return;
+            const hands = Array.from(document.querySelectorAll('.hand')).map(i => i.value);
+            const board = document.getElementById('board').value;
+            const num = hands.length;
+
+            // 1. Alloc Pointers
+            const ptrArray = Module._malloc(num * 4);
+            
+            // 2. Write Strings to Memory
+            hands.forEach((h, i) => {
+                const ptr = Module.stringToNewUTF8(h);
+                Module.setValue(ptrArray + (i*4), ptr, 'i32');
+            });
+
+            const ptrBoard = Module.stringToNewUTF8(board);
+            const ptrRes = Module._malloc(num * 32);
+
+            // 3. Call C
+            Module._calculate_equity(num, ptrArray, ptrBoard, ptrRes);
+
+            // 4. Read Results
+            let html = `<table><tr><th>Win</th><th>Tie</th><th>Equity</th></tr>`;
+            for(let i=0; i<num; i++) {
+                const off = ptrRes + (i*32);
+                html += `<tr>
+                    <td>${Module.getValue(off, 'double').toFixed(2)}%</td>
+                    <td>${Module.getValue(off+8, 'double').toFixed(2)}%</td>
+                    <td>${Module.getValue(off+24, 'double').toFixed(2)}%</td>
+                </tr>`;
+            }
+            document.getElementById('results').innerHTML = html + "</table>";
+
+            // Cleanup (Optional for simple app, but good practice)
+            Module._free(ptrArray);
+            Module._free(ptrRes);
+        }
+    </script>
+</body>
+</html>
+
