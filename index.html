@@ -3,230 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monolith Casino Engine</title>
+    <title>Poker Odds Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom Felt Texture */
+        /* Felt Texture */
         .poker-felt {
             background-color: #0f4d19;
             background-image: radial-gradient(rgba(255,255,255,0.1) 2px, transparent 2px);
             background-size: 30px 30px;
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
         }
-        .card-slot:hover { transform: translateY(-4px); }
+        /* Custom Scrollbar for picker */
+        ::-webkit-scrollbar { height: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        
+        /* Animation for Selected Slot */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px #eab308; border-color: #eab308; }
+            50% { box-shadow: 0 0 25px #eab308; border-color: #facc15; }
+        }
+        .selected-slot {
+            animation: pulse-glow 1.5s infinite;
+            transform: scale(1.1);
+            z-index: 20;
+        }
     </style>
 </head>
-<body class="bg-neutral-900 text-white min-h-screen flex flex-col items-center justify-center p-4 select-none font-sans">
+<body class="bg-neutral-900 text-white h-screen flex flex-col overflow-hidden font-sans select-none">
 
-    <div class="absolute top-8 text-center">
-        <h1 class="text-4xl font-black text-yellow-500 tracking-wider drop-shadow-lg">MONOLITH</h1>
-        <p class="text-neutral-500 text-sm">C-POWERED SOLVER</p>
+    <div class="h-16 flex flex-col items-center justify-center z-10 bg-neutral-900 shadow-md shrink-0">
+        <h1 class="text-2xl font-black text-yellow-500 tracking-wider">POKER ODDS CALCULATOR</h1>
+        <p class="text-neutral-500 text-xs tracking-widest uppercase">By Luca Trinca</p>
     </div>
 
-    <div class="relative w-[350px] h-[350px] sm:w-[600px] sm:h-[600px] md:w-[900px] md:h-[500px] rounded-[200px] border-[16px] border-amber-900 shadow-2xl poker-felt flex items-center justify-center mt-10">
+    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-neutral-900" onclick="deselectAll()">
         
-        <div class="flex gap-2 p-4 bg-black/20 rounded-2xl border border-white/5 backdrop-blur-sm" id="board-container">
-            </div>
+        <div onclick="event.stopPropagation()" 
+             class="relative w-[340px] h-[340px] sm:w-[600px] sm:h-[600px] md:w-[850px] md:h-[480px] rounded-[200px] border-[16px] border-amber-900 shadow-2xl poker-felt flex items-center justify-center transition-all duration-300 transform scale-90 sm:scale-100">
+            
+            <div class="flex gap-2 p-3 bg-black/30 rounded-2xl border border-white/5 backdrop-blur-sm" id="board-container">
+                </div>
 
-        <div id="players-container" class="absolute inset-0 pointer-events-none">
-            </div>
+            <div id="players-container" class="absolute inset-0 pointer-events-none">
+                </div>
 
+            <button onclick="resetTable()" class="absolute -bottom-12 text-xs text-neutral-500 hover:text-red-500 font-bold tracking-widest uppercase transition">
+                Reset Table
+            </button>
+        </div>
     </div>
 
-    <button onclick="calculate()" class="mt-16 px-12 py-4 bg-gradient-to-b from-yellow-500 to-yellow-700 text-black font-black text-xl rounded-full shadow-[0_0_30px_rgba(234,179,8,0.4)] hover:scale-105 hover:shadow-[0_0_50px_rgba(234,179,8,0.6)] transition-all border-2 border-yellow-400 active:scale-95">
-        RUN SIMULATION
-    </button>
+    <div class="h-[35vh] sm:h-[280px] bg-neutral-950 border-t border-neutral-800 flex flex-col shrink-0 z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.5)]">
+        
+        <div class="flex justify-between items-center px-4 py-2 bg-neutral-900 border-b border-neutral-800">
+            <span class="text-sm font-bold text-neutral-400" id="picker-status">Select a card slot above...</span>
+            <button onclick="clearSelectedSlot()" class="px-4 py-1 bg-red-900/50 text-red-200 text-xs rounded border border-red-800 hover:bg-red-800 transition">Clear Slot</button>
+        </div>
 
-    <div id="modal-overlay" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closeModal()">
-        <div class="bg-neutral-800 border border-neutral-600 rounded-2xl p-6 max-w-4xl w-full shadow-2xl" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-yellow-500">Select Card</h2>
-                <button onclick="closeModal()" class="text-neutral-400 hover:text-white text-xl">✕</button>
+        <div class="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-2">
+                <div class="w-8 text-2xl text-center text-neutral-500">♠</div>
+                <div class="flex gap-1 overflow-x-auto pb-2 scrollbar-hide" id="row-s"></div>
             </div>
-            
-            <div class="grid grid-cols-4 sm:grid-cols-13 gap-2" id="picker-grid">
-                </div>
-            
-            <button onclick="selectCard(null)" class="mt-6 w-full py-3 bg-red-900/50 hover:bg-red-900 text-red-200 border border-red-800 rounded-lg transition font-bold">
-                Clear Slot
-            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-8 text-2xl text-red-800">♥</div>
+                <div class="flex gap-1 overflow-x-auto pb-2 scrollbar-hide" id="row-h"></div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-8 text-2xl text-neutral-500">♣</div>
+                <div class="flex gap-1 overflow-x-auto pb-2 scrollbar-hide" id="row-c"></div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-8 text-2xl text-red-800">♦</div>
+                <div class="flex gap-1 overflow-x-auto pb-2 scrollbar-hide" id="row-d"></div>
+            </div>
         </div>
     </div>
 
     <script src="poker.js"></script>
 
     <script>
-        // --- GAME STATE ---
-        let pokerModule = null;
+        // --- CONFIG ---
         const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-        const SUITS = ['s', 'h', 'd', 'c'];
+        const SUITS = ['s', 'h', 'c', 'd'];
+        const SUIT_ICONS = {'s':'♠', 'h':'♥', 'd':'♦', 'c':'♣'};
         
-        // 8 Players (2 active by default)
+        // --- STATE ---
+        let pokerModule = null;
         let players = Array(8).fill(null).map((_, i) => ({
             id: i,
-            active: i < 2, 
+            active: i < 2, // Only P1 and P2 active initially
             cards: [null, null],
             stats: { win: 0, tie: 0, equity: 0 }
         }));
         let board = [null, null, null, null, null];
         
-        // Picker State
-        let pickerTarget = { type: null, index: 0, playerId: 0 }; 
+        // Selection State
+        let selection = { type: null, index: null, playerId: null }; // Tracks what slot is glowing
 
-        // --- INITIALIZATION ---
+        // --- INIT ---
         createPokerModule().then(mod => {
             pokerModule = mod;
-            console.log("♠️ C Engine Ready");
+            console.log("♠️ Engine Loaded");
             renderApp();
         });
 
-        // --- RENDER LOGIC ---
+        // --- CORE RENDER ---
         function renderApp() {
             renderBoard();
             renderPlayers();
+            renderPicker();
         }
 
         function renderBoard() {
-            const container = document.getElementById('board-container');
-            container.innerHTML = board.map((card, i) => `
-                <div onclick="openPicker('board', ${i}, null)" 
-                     class="card-slot w-10 h-14 sm:w-14 sm:h-20 rounded cursor-pointer flex items-center justify-center text-lg font-bold shadow-md transition-all border ${getCardStyles(card)}">
+            const el = document.getElementById('board-container');
+            el.innerHTML = board.map((card, i) => {
+                const isSelected = selection.type === 'board' && selection.index === i;
+                return `
+                <div onclick="selectSlot(event, 'board', ${i})" 
+                     class="w-10 h-14 sm:w-14 sm:h-20 rounded cursor-pointer flex items-center justify-center text-lg font-bold transition-all border-2 
+                     ${getCardStyles(card)} 
+                     ${isSelected ? 'selected-slot' : 'border-transparent shadow-md hover:translate-y-[-2px]'}">
                     ${formatCard(card)}
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function renderPlayers() {
-            const container = document.getElementById('players-container');
-            container.innerHTML = players.map((p, i) => {
-                // Elliptical Positioning Logic
-                const angle = (i * 45 + 90) * (Math.PI / 180); // Rotate to start at bottom
-                // Radii (Percentage based to be responsive)
+            const el = document.getElementById('players-container');
+            el.innerHTML = players.map((p, i) => {
+                // Math for 8-player ellipse
+                const angle = (i * 45 + 90) * (Math.PI / 180);
                 const rx = 52; 
                 const ry = 58;
-                
                 const left = 50 + rx * Math.cos(angle);
                 const top = 46 + ry * Math.sin(angle);
 
-                const opacity = p.active ? 'opacity-100 scale-100' : 'opacity-40 scale-75 grayscale';
-                const glow = p.active ? 'shadow-[0_0_15px_rgba(0,0,0,0.5)]' : '';
+                const isActive = p.active || (p.cards[0] || p.cards[1]); // Visually active if they have cards
+                const opacity = isActive ? 'opacity-100 scale-100' : 'opacity-40 scale-90 grayscale';
+                const glow = selection.playerId === i ? 'ring-2 ring-yellow-500' : '';
 
                 return `
                 <div class="absolute pointer-events-auto flex flex-col items-center transition-all duration-300 ${opacity}" 
                      style="left: ${left}%; top: ${top}%; transform: translate(-50%, -50%)">
                     
                     <div onclick="togglePlayer(${i})" 
-                         class="w-12 h-12 bg-neutral-800 border-2 border-neutral-600 rounded-full flex items-center justify-center font-bold mb-2 cursor-pointer hover:bg-neutral-700 hover:border-yellow-500 transition ${glow}">
+                         class="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-800 border-2 border-neutral-600 rounded-full flex items-center justify-center font-bold mb-2 cursor-pointer hover:bg-neutral-700 hover:border-yellow-500 transition text-xs sm:text-base ${glow}">
                         P${i+1}
                     </div>
 
                     <div class="flex gap-1">
-                        <div onclick="openPicker('player', 0, ${i})" class="card-slot w-10 h-14 bg-white rounded border border-gray-300 flex items-center justify-center text-sm font-bold cursor-pointer ${getCardStyles(p.cards[0])}">
-                            ${formatCard(p.cards[0])}
-                        </div>
-                        <div onclick="openPicker('player', 1, ${i})" class="card-slot w-10 h-14 bg-white rounded border border-gray-300 flex items-center justify-center text-sm font-bold cursor-pointer ${getCardStyles(p.cards[1])}">
-                            ${formatCard(p.cards[1])}
-                        </div>
+                        ${renderPlayerCard(p, 0)}
+                        ${renderPlayerCard(p, 1)}
                     </div>
 
-                    <div class="mt-1 text-xs bg-black/80 px-2 py-0.5 rounded text-yellow-400 font-mono ${p.stats.equity > 0 ? 'opacity-100' : 'opacity-0'}">
-                        ${p.stats.equity}%
+                    <div class="mt-1 h-5">
+                        ${p.stats.equity > 0 ? `
+                        <div class="text-[10px] sm:text-xs bg-black/80 px-2 py-0.5 rounded text-yellow-400 font-mono shadow border border-yellow-900/50">
+                            ${p.stats.equity}%
+                        </div>` : ''}
                     </div>
-                </div>
-                `;
+                </div>`;
             }).join('');
         }
 
-        // --- HELPERS ---
-        function getCardStyles(card) {
-            if (!card) return 'bg-white/10 border-white/10 text-white/20'; // Empty
-            const suit = card[1];
-            const isRed = suit === 'h' || suit === 'd';
-            return `bg-white ${isRed ? 'text-red-600' : 'text-black'}`;
-        }
-
-        function formatCard(card) {
-            if (!card) return '+';
-            const suits = {'s':'♠', 'h':'♥', 'd':'♦', 'c':'♣'};
-            return `${card[0]}${suits[card[1]]}`;
-        }
-
-        function togglePlayer(id) {
-            players[id].active = !players[id].active;
-            renderApp();
-        }
-
-        // --- MODAL LOGIC ---
-        function openPicker(type, index, playerId) {
-            // Only allow picking for active players
-            if (type === 'player' && !players[playerId].active) return;
-
-            pickerTarget = { type, index, playerId };
-            const modal = document.getElementById('modal-overlay');
-            const grid = document.getElementById('picker-grid');
+        function renderPlayerCard(player, cardIndex) {
+            const card = player.cards[cardIndex];
+            const isSelected = selection.type === 'player' && selection.playerId === player.id && selection.index === cardIndex;
             
-            // Build Used Cards Set
+            return `
+            <div onclick="selectSlot(event, 'player', ${cardIndex}, ${player.id})" 
+                 class="w-9 h-12 sm:w-10 sm:h-14 rounded border-2 flex items-center justify-center text-sm font-bold cursor-pointer transition-all
+                 ${getCardStyles(card)}
+                 ${isSelected ? 'selected-slot' : 'border-gray-400/20 hover:border-white/50'}">
+                ${formatCard(card)}
+            </div>`;
+        }
+
+        function renderPicker() {
+            // Calculate used cards
             const used = new Set();
             board.forEach(c => c && used.add(c));
             players.forEach(p => p.cards.forEach(c => c && used.add(c)));
 
-            // Render 52 Cards
-            grid.innerHTML = SUITS.map(suit => 
-                RANKS.map(rank => {
+            SUITS.forEach(suit => {
+                const row = document.getElementById(`row-${suit}`);
+                const isRed = suit === 'h' || suit === 'd';
+                
+                row.innerHTML = RANKS.map(rank => {
                     const card = `${rank}${suit}`;
                     const isUsed = used.has(card);
-                    const isRed = suit === 'h' || suit === 'd';
-                    const suits = {'s':'♠', 'h':'♥', 'd':'♦', 'c':'♣'};
                     
                     return `
-                    <button onclick="selectCard('${card}')" ${isUsed ? 'disabled' : ''}
-                        class="h-12 rounded border flex items-center justify-center font-bold text-lg transition
+                    <button onclick="pickCard('${card}')" ${isUsed ? 'disabled' : ''}
+                        class="w-8 h-12 sm:w-10 sm:h-14 shrink-0 rounded border flex items-center justify-center font-bold text-sm sm:text-lg transition-all duration-100
                         ${isUsed 
-                            ? 'bg-neutral-900 border-neutral-800 text-neutral-700 opacity-50' 
-                            : `bg-white hover:scale-110 hover:shadow-glow hover:z-10 ${isRed ? 'text-red-600' : 'text-black'}`
+                            ? 'bg-neutral-800 border-neutral-700 text-neutral-600 opacity-30 cursor-not-allowed' 
+                            : `bg-white border-neutral-300 hover:scale-110 active:scale-95 shadow-sm ${isRed ? 'text-red-600' : 'text-black'}`
                         }">
-                        ${rank}${suits[suit]}
+                        ${rank}${SUIT_ICONS[suit]}
                     </button>`;
-                }).join('')
-            ).join('');
+                }).join('');
+            });
 
-            modal.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-        }
-
-        function selectCard(card) {
-            if (pickerTarget.type === 'board') {
-                board[pickerTarget.index] = card;
+            // Update status text
+            const status = document.getElementById('picker-status');
+            if (selection.type) {
+                const target = selection.type === 'board' ? `Board Card ${selection.index + 1}` : `Player ${selection.playerId + 1} Card ${selection.index + 1}`;
+                status.innerText = `Picking for: ${target}`;
+                status.className = "text-sm font-bold text-yellow-500 animate-pulse";
             } else {
-                players[pickerTarget.playerId].cards[pickerTarget.index] = card;
+                status.innerText = "Select a card slot above to begin...";
+                status.className = "text-sm font-bold text-neutral-500";
             }
-            closeModal();
+        }
+
+        // --- INTERACTIONS ---
+
+        function selectSlot(e, type, index, playerId = null) {
+            e.stopPropagation(); // Prevent deselecting immediately
+            
+            // Toggle selection logic
+            if (selection.type === type && selection.index === index && selection.playerId === playerId) {
+                deselectAll(); // Click again to deselect
+            } else {
+                selection = { type, index, playerId };
+                renderApp();
+            }
+        }
+
+        function pickCard(card) {
+            if (!selection.type) return;
+
+            // Update Data
+            if (selection.type === 'board') {
+                board[selection.index] = card;
+                
+                // Auto-advance logic (Optional nice-to-have)
+                if (selection.index < 4) {
+                    selection.index++;
+                } else {
+                    deselectAll();
+                }
+
+            } else if (selection.type === 'player') {
+                // ACTIVATE PLAYER AUTOMATICALLY
+                players[selection.playerId].active = true;
+                players[selection.playerId].cards[selection.index] = card;
+
+                // Auto-advance to next card in hand
+                if (selection.index === 0) {
+                    selection.index = 1;
+                } else {
+                    deselectAll();
+                }
+            }
+            
+            // AUTO CALCULATE ON EVERY PICK
+            calculate(); 
             renderApp();
         }
 
-        // --- WASM BRIDGE ---
+        function clearSelectedSlot() {
+            if (!selection.type) return;
+            
+            if (selection.type === 'board') {
+                board[selection.index] = null;
+            } else {
+                players[selection.playerId].cards[selection.index] = null;
+                // If hand becomes empty, maybe deactivate? (Optional, kept simple for now)
+            }
+            
+            calculate();
+            renderApp();
+        }
+
+        function deselectAll() {
+            selection = { type: null, index: null, playerId: null };
+            renderApp();
+        }
+
+        function resetTable() {
+            board = [null, null, null, null, null];
+            players.forEach(p => {
+                p.cards = [null, null];
+                p.stats = { win: 0, tie: 0, equity: 0 };
+                p.active = p.id < 2; // Reset to just 2 players
+            });
+            deselectAll();
+            calculate(); // Clear stats
+        }
+
+        function togglePlayer(id) {
+            // Only allow toggling if they don't have cards (prevent accidental deletion)
+            // Or just toggle active state logic
+            const p = players[id];
+            if (p.cards[0] || p.cards[1]) return; // Don't hide if they have cards
+            
+            p.active = !p.active;
+            if (!p.active) {
+                p.stats = { win: 0, tie: 0, equity: 0 };
+            }
+            calculate();
+            renderApp();
+        }
+
+        // --- STYLES ---
+        function getCardStyles(card) {
+            if (!card) return 'bg-white/5 border-white/10 text-white/10';
+            const isRed = card[1] === 'h' || card[1] === 'd';
+            return `bg-white ${isRed ? 'text-red-600 border-red-200' : 'text-black border-gray-200'}`;
+        }
+        function formatCard(card) {
+            if (!card) return '+';
+            return `${card[0]}${SUIT_ICONS[card[1]]}`;
+        }
+
+        // --- ENGINE BRIDGE ---
         function calculate() {
             if (!pokerModule) return;
 
-            // 1. Prepare Data
             const activePlayers = players.filter(p => p.active && p.cards[0] && p.cards[1]);
             const num = activePlayers.length;
-            if (num < 2) return alert("Need at least 2 active players with full hands!");
+
+            // Reset stats if insufficient data
+            if (num < 2) {
+                players.forEach(p => p.stats = {win:0, tie:0, equity:0});
+                renderPlayers(); // just update players to clear stats
+                return;
+            }
 
             const handStrings = activePlayers.map(p => `${p.cards[0]} ${p.cards[1]}`);
-            const boardString = board.filter(c => c).join(" "); // "As Ks"
+            const boardString = board.filter(c => c).join(" ");
 
-            // 2. Allocate Memory
+            // Alloc
             const ptrHands = pokerModule._malloc(num * 4);
             const ptrsToFree = [ptrHands];
 
             handStrings.forEach((str, i) => {
                 const ptr = pokerModule.stringToNewUTF8(str);
                 ptrsToFree.push(ptr);
-                pokerModule.setValue(ptrHands + (i * 4), ptr, 'i32');
+                pokerModule.setValue(ptrHands + (i*4), ptr, 'i32');
             });
 
             const ptrBoard = pokerModule.stringToNewUTF8(boardString);
@@ -235,23 +353,21 @@
             const ptrResults = pokerModule._malloc(num * 32);
             ptrsToFree.push(ptrResults);
 
-            // 3. Call C Engine
+            // Calc
             pokerModule._calculate_equity(num, ptrHands, ptrBoard, ptrResults);
 
-            // 4. Read Results & Update State
+            // Read
             activePlayers.forEach((p, i) => {
-                const offset = ptrResults + (i * 32);
-                // We update the original player object in the main array
-                const targetPlayer = players.find(orig => orig.id === p.id);
-                targetPlayer.stats.win = pokerModule.getValue(offset, 'double').toFixed(1);
-                targetPlayer.stats.tie = pokerModule.getValue(offset+8, 'double').toFixed(1);
-                targetPlayer.stats.equity = pokerModule.getValue(offset+24, 'double').toFixed(1);
+                const off = ptrResults + (i*32);
+                const target = players.find(orig => orig.id === p.id);
+                target.stats.win = pokerModule.getValue(off, 'double').toFixed(0);
+                target.stats.tie = pokerModule.getValue(off+8, 'double').toFixed(0);
+                target.stats.equity = pokerModule.getValue(off+24, 'double').toFixed(0);
             });
 
-            // 5. Cleanup
+            // Cleanup
             ptrsToFree.forEach(p => pokerModule._free(p));
-
-            renderApp();
+            // Note: renderApp() is called by the function triggering this (pickCard)
         }
     </script>
 </body>
