@@ -10,9 +10,12 @@ Unlike traditional calculators that rely on server-side processing, this tool ru
 ## Engineering Decisions
 
 The core odds calculation logic is implemented in low-level C for performance, while the user interface is handled by lightweight JavaScript.
-### The Engine: Optimized C (poker_engine.c)C was selected for the backend to handle the combinatorial explosion inherent in poker equity calculations. To determine equity exactly, millions of hand combinations must be evaluated in milliseconds. JavaScript overhead is generally too high for this level of bitwise manipulation.
-### Core Algorithms:Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to generate a unique product ID for every possible hand configuration.Hash Lookup: The engine uses this unique product ID to look up hand strength in a pre-computed hash table (approx. 1MB). This reduces hand evaluation to an O(1) operation.Bitwise Flush Check: Suits are encoded as bits. The engine checks for flushes using a single bitwise AND operation (&), avoiding expensive loops or string comparisons.
-### Recursive Solver: A Depth-First Search (DFS) algorithm iterates through every possible remaining card in the deck to determine the exact winner for every board state.
+### The Engine: 
+Optimized C (poker_engine.c)C was selected for the backend to handle the combinatorial explosion inherent in poker equity calculations. To determine equity exactly, millions of hand combinations must be evaluated in milliseconds. JavaScript overhead is generally too high for this level of bitwise manipulation.
+### Core Algorithms:
+Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to generate a unique product ID for every possible hand configuration.Hash Lookup: The engine uses this unique product ID to look up hand strength in a pre-computed hash table (approx. 1MB). This reduces hand evaluation to an O(1) operation.Bitwise Flush Check: Suits are encoded as bits. The engine checks for flushes using a single bitwise AND operation (&), avoiding expensive loops or string comparisons.
+### Recursive Solver:
+A Depth-First Search (DFS) algorithm iterates through every possible remaining card in the deck to determine the exact winner for every board state.
 
 ### WebAssembly ImplementationTo achieve a serverless architecture, the C code is compiled to a .wasm binary using Emscripten. This allows the heavy computational logic to execute on the client's CPU, providing the speed of C with the accessibility of a web app.3. User InterfaceThe UI is built using Vanilla JavaScript and HTML. Heavy frameworks like React or Vue were deliberately avoided to keep the project lightweight, dependency-free, and easy to deploy on any static host.
 
