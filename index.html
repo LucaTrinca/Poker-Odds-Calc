@@ -32,9 +32,18 @@
 </head>
 <body class="bg-neutral-900 text-white h-screen flex flex-col overflow-hidden font-sans select-none">
 
-    <div class="h-16 flex flex-col items-center justify-center z-10 bg-neutral-900 shadow-md shrink-0">
-        <h1 class="text-2xl font-black text-yellow-500 tracking-wider">POKER ODDS CALCULATOR</h1>
-        <p class="text-neutral-500 text-xs tracking-widest uppercase">By Luca Trinca</p>
+    <div class="h-16 flex items-center justify-between px-4 sm:px-8 z-10 bg-neutral-900 shadow-md shrink-0 border-b border-white/5">
+        
+        <div class="w-24"></div>
+
+        <div class="flex flex-col items-center">
+            <h1 class="text-xl sm:text-2xl font-black text-yellow-500 tracking-wider text-center">POKER ODDS CALCULATOR</h1>
+            <p class="text-neutral-500 text-[10px] sm:text-xs tracking-widest uppercase">By Luca Trinca</p>
+        </div>
+
+        <button onclick="resetTable()" class="w-24 text-xs font-bold text-red-500 hover:text-white border border-red-900/50 hover:bg-red-600 rounded px-3 py-2 transition uppercase tracking-wider">
+            Reset
+        </button>
     </div>
 
     <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-neutral-900" onclick="deselectAll()">
@@ -42,15 +51,11 @@
         <div onclick="event.stopPropagation()" 
              class="relative w-[340px] h-[340px] sm:w-[600px] sm:h-[600px] md:w-[850px] md:h-[480px] rounded-[200px] border-[16px] border-amber-900 shadow-2xl poker-felt flex items-center justify-center transition-all duration-300 transform scale-90 sm:scale-100">
             
-            <div class="flex gap-2 p-3 bg-black/30 rounded-2xl border border-white/5 backdrop-blur-sm" id="board-container">
+            <div class="flex gap-2 p-3 bg-black/30 rounded-2xl border border-white/5 backdrop-blur-sm shadow-inner" id="board-container">
                 </div>
 
             <div id="players-container" class="absolute inset-0 pointer-events-none">
                 </div>
-
-            <button onclick="resetTable()" class="absolute -bottom-12 text-xs text-neutral-500 hover:text-red-500 font-bold tracking-widest uppercase transition">
-                Reset Table
-            </button>
         </div>
     </div>
 
@@ -58,7 +63,7 @@
         
         <div class="flex justify-between items-center px-4 py-2 bg-neutral-900 border-b border-neutral-800">
             <span class="text-sm font-bold text-neutral-400" id="picker-status">Select a card slot above...</span>
-            <button onclick="clearSelectedSlot()" class="px-4 py-1 bg-red-900/50 text-red-200 text-xs rounded border border-red-800 hover:bg-red-800 transition">Clear Slot</button>
+            <button onclick="clearSelectedSlot()" class="px-4 py-1 bg-neutral-800 text-neutral-400 text-xs rounded border border-neutral-700 hover:bg-neutral-700 hover:text-white transition">Clear Slot</button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2" onclick="event.stopPropagation()">
@@ -93,14 +98,14 @@
         let pokerModule = null;
         let players = Array(8).fill(null).map((_, i) => ({
             id: i,
-            active: i < 2, // Only P1 and P2 active initially
+            active: i < 2, 
             cards: [null, null],
             stats: { win: 0, tie: 0, equity: 0 }
         }));
         let board = [null, null, null, null, null];
         
         // Selection State
-        let selection = { type: null, index: null, playerId: null }; // Tracks what slot is glowing
+        let selection = { type: null, index: null, playerId: null }; 
 
         // --- INIT ---
         createPokerModule().then(mod => {
@@ -133,14 +138,13 @@
         function renderPlayers() {
             const el = document.getElementById('players-container');
             el.innerHTML = players.map((p, i) => {
-                // Math for 8-player ellipse
                 const angle = (i * 45 + 90) * (Math.PI / 180);
                 const rx = 52; 
                 const ry = 58;
                 const left = 50 + rx * Math.cos(angle);
                 const top = 46 + ry * Math.sin(angle);
 
-                const isActive = p.active || (p.cards[0] || p.cards[1]); // Visually active if they have cards
+                const isActive = p.active || (p.cards[0] || p.cards[1]); 
                 const opacity = isActive ? 'opacity-100 scale-100' : 'opacity-40 scale-90 grayscale';
                 const glow = selection.playerId === i ? 'ring-2 ring-yellow-500' : '';
 
@@ -158,12 +162,23 @@
                         ${renderPlayerCard(p, 1)}
                     </div>
 
-                    <div class="mt-1 h-5">
-                        ${p.stats.equity > 0 ? `
-                        <div class="text-[10px] sm:text-xs bg-black/80 px-2 py-0.5 rounded text-yellow-400 font-mono shadow border border-yellow-900/50">
-                            ${p.stats.equity}%
-                        </div>` : ''}
+                    <div class="mt-1 ${p.stats.equity > 0 ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300">
+                        <div class="bg-black/80 p-1.5 rounded border border-white/10 backdrop-blur-md flex gap-3 text-[9px] sm:text-[10px] font-mono shadow-lg">
+                            <div class="flex flex-col items-center">
+                                <span class="text-neutral-500 text-[8px] uppercase tracking-wider">Win</span>
+                                <span class="text-green-400 font-bold">${p.stats.win}%</span>
+                            </div>
+                            <div class="flex flex-col items-center border-l border-white/10 pl-2">
+                                <span class="text-neutral-500 text-[8px] uppercase tracking-wider">Tie</span>
+                                <span class="text-blue-300 font-bold">${p.stats.tie}%</span>
+                            </div>
+                            <div class="flex flex-col items-center border-l border-white/10 pl-2">
+                                <span class="text-neutral-500 text-[8px] uppercase tracking-wider">Eq</span>
+                                <span class="text-yellow-400 font-bold">${p.stats.equity}%</span>
+                            </div>
+                        </div>
                     </div>
+
                 </div>`;
             }).join('');
         }
@@ -171,7 +186,6 @@
         function renderPlayerCard(player, cardIndex) {
             const card = player.cards[cardIndex];
             const isSelected = selection.type === 'player' && selection.playerId === player.id && selection.index === cardIndex;
-            
             return `
             <div onclick="selectSlot(event, 'player', ${cardIndex}, ${player.id})" 
                  class="w-9 h-12 sm:w-10 sm:h-14 rounded border-2 flex items-center justify-center text-sm font-bold cursor-pointer transition-all
@@ -182,7 +196,6 @@
         }
 
         function renderPicker() {
-            // Calculate used cards
             const used = new Set();
             board.forEach(c => c && used.add(c));
             players.forEach(p => p.cards.forEach(c => c && used.add(c)));
@@ -207,7 +220,6 @@
                 }).join('');
             });
 
-            // Update status text
             const status = document.getElementById('picker-status');
             if (selection.type) {
                 const target = selection.type === 'board' ? `Board Card ${selection.index + 1}` : `Player ${selection.playerId + 1} Card ${selection.index + 1}`;
@@ -222,11 +234,9 @@
         // --- INTERACTIONS ---
 
         function selectSlot(e, type, index, playerId = null) {
-            e.stopPropagation(); // Prevent deselecting immediately
-            
-            // Toggle selection logic
+            e.stopPropagation(); 
             if (selection.type === type && selection.index === index && selection.playerId === playerId) {
-                deselectAll(); // Click again to deselect
+                deselectAll();
             } else {
                 selection = { type, index, playerId };
                 renderApp();
@@ -236,44 +246,26 @@
         function pickCard(card) {
             if (!selection.type) return;
 
-            // Update Data
             if (selection.type === 'board') {
                 board[selection.index] = card;
-                
-                // Auto-advance logic (Optional nice-to-have)
-                if (selection.index < 4) {
-                    selection.index++;
-                } else {
-                    deselectAll();
-                }
+                if (selection.index < 4) selection.index++;
+                else deselectAll();
 
             } else if (selection.type === 'player') {
-                // ACTIVATE PLAYER AUTOMATICALLY
                 players[selection.playerId].active = true;
                 players[selection.playerId].cards[selection.index] = card;
-
-                // Auto-advance to next card in hand
-                if (selection.index === 0) {
-                    selection.index = 1;
-                } else {
-                    deselectAll();
-                }
+                if (selection.index === 0) selection.index = 1;
+                else deselectAll();
             }
             
-            // AUTO CALCULATE ON EVERY PICK
             calculate(); 
             renderApp();
         }
 
         function clearSelectedSlot() {
             if (!selection.type) return;
-            
-            if (selection.type === 'board') {
-                board[selection.index] = null;
-            } else {
-                players[selection.playerId].cards[selection.index] = null;
-                // If hand becomes empty, maybe deactivate? (Optional, kept simple for now)
-            }
+            if (selection.type === 'board') board[selection.index] = null;
+            else players[selection.playerId].cards[selection.index] = null;
             
             calculate();
             renderApp();
@@ -289,22 +281,19 @@
             players.forEach(p => {
                 p.cards = [null, null];
                 p.stats = { win: 0, tie: 0, equity: 0 };
-                p.active = p.id < 2; // Reset to just 2 players
+                p.active = p.id < 2; 
             });
             deselectAll();
-            calculate(); // Clear stats
+            calculate();
         }
 
         function togglePlayer(id) {
-            // Only allow toggling if they don't have cards (prevent accidental deletion)
-            // Or just toggle active state logic
             const p = players[id];
-            if (p.cards[0] || p.cards[1]) return; // Don't hide if they have cards
+            if (p.cards[0] || p.cards[1]) return; 
             
             p.active = !p.active;
-            if (!p.active) {
-                p.stats = { win: 0, tie: 0, equity: 0 };
-            }
+            if (!p.active) p.stats = { win: 0, tie: 0, equity: 0 };
+            
             calculate();
             renderApp();
         }
@@ -327,17 +316,15 @@
             const activePlayers = players.filter(p => p.active && p.cards[0] && p.cards[1]);
             const num = activePlayers.length;
 
-            // Reset stats if insufficient data
             if (num < 2) {
                 players.forEach(p => p.stats = {win:0, tie:0, equity:0});
-                renderPlayers(); // just update players to clear stats
+                renderPlayers();
                 return;
             }
 
             const handStrings = activePlayers.map(p => `${p.cards[0]} ${p.cards[1]}`);
             const boardString = board.filter(c => c).join(" ");
 
-            // Alloc
             const ptrHands = pokerModule._malloc(num * 4);
             const ptrsToFree = [ptrHands];
 
@@ -353,21 +340,17 @@
             const ptrResults = pokerModule._malloc(num * 32);
             ptrsToFree.push(ptrResults);
 
-            // Calc
             pokerModule._calculate_equity(num, ptrHands, ptrBoard, ptrResults);
 
-            // Read
             activePlayers.forEach((p, i) => {
                 const off = ptrResults + (i*32);
                 const target = players.find(orig => orig.id === p.id);
-                target.stats.win = pokerModule.getValue(off, 'double').toFixed(0);
-                target.stats.tie = pokerModule.getValue(off+8, 'double').toFixed(0);
-                target.stats.equity = pokerModule.getValue(off+24, 'double').toFixed(0);
+                target.stats.win = pokerModule.getValue(off, 'double').toFixed(1);
+                target.stats.tie = pokerModule.getValue(off+8, 'double').toFixed(1);
+                target.stats.equity = pokerModule.getValue(off+24, 'double').toFixed(1);
             });
 
-            // Cleanup
             ptrsToFree.forEach(p => pokerModule._free(p));
-            // Note: renderApp() is called by the function triggering this (pickCard)
         }
     </script>
 </body>
