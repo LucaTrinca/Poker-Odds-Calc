@@ -17,7 +17,8 @@ Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41)
 ### Recursive Solver:
 A Depth-First Search (DFS) algorithm iterates through every possible remaining card in the deck to determine the exact winner for every board state.
 
-### WebAssembly ImplementationTo achieve a serverless architecture, the C code is compiled to a .wasm binary using Emscripten. This allows the heavy computational logic to execute on the client's CPU, providing the speed of C with the accessibility of a web app.3. User InterfaceThe UI is built using Vanilla JavaScript and HTML. Heavy frameworks like React or Vue were deliberately avoided to keep the project lightweight, dependency-free, and easy to deploy on any static host.
+### WebAssembly Implementation
+To achieve a serverless architecture, the C code is compiled to a .wasm binary using Emscripten. This allows the heavy computational logic to execute on the client's CPU, providing the speed of C with the accessibility of a web app.3. User InterfaceThe UI is built using Vanilla JavaScript and HTML. Heavy frameworks like React or Vue were deliberately avoided to keep the project lightweight, dependency-free, and easy to deploy on any static host.
 
 ## Why Exact Calculation?
 A Monte Carlo simulation typically requires approximately $10^6$ iterations to achieve a standard error of $<0.1\%$.The total state space of a pre-flop heads-up Hold'em hand is relatively small in computational terms:$$\binom{48}{5} \approx 1,712,304 \text{ combinations}$$Because the computational cost of an exact solution is nearly identical to that of a high-precision simulation, this project utilizes a deterministic Exhaustive Search algorithm. This guarantees 0.00% error with no significant performance penalty compared to a stochastic approach.
