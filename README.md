@@ -13,7 +13,10 @@ The core odds calculation logic is implemented in low-level C for performance, w
 ### The Engine: 
 Optimized C (poker_engine.c)C was selected for the backend to handle the combinatorial explosion inherent in poker equity calculations. To determine equity exactly, millions of hand combinations must be evaluated in milliseconds. JavaScript overhead is generally too high for this level of bitwise manipulation.
 ### Core Algorithms:
-Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to generate a unique product ID for every possible hand configuration.Hash Lookup: The engine uses this unique product ID to look up hand strength in a pre-computed hash table (approx. 1MB). This reduces hand evaluation to an O(1) operation.Bitwise Flush Check: Suits are encoded as bits. The engine checks for flushes using a single bitwise AND operation (&), avoiding expensive loops or string comparisons.
+Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to generate a unique product ID for every possible hand configuration.
+
+### Hash Lookup: 
+The engine uses this unique product ID to look up hand strength in a pre-computed hash table (approx. 1MB). This reduces hand evaluation to an O(1) operation.Bitwise Flush Check: Suits are encoded as bits. The engine checks for flushes using a single bitwise AND operation (&), avoiding expensive loops or string comparisons.
 ### Recursive Solver:
 A Depth-First Search (DFS) algorithm iterates through every possible remaining card in the deck to determine the exact winner for every board state.
 
