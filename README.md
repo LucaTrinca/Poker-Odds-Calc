@@ -1,45 +1,20 @@
-Poker Odds Calculator
-A high-performance, serverless poker equity engine running directly in the browser.
+# Poker Odds Calculator
+## A high-performance, serverless poker equity engine running directly in the browser.
+### Author: Luca Trinca
 
-Built by Luca Trinca
-
-Overview
+## Overview
 This project is a Texas Hold'em Equity Calculator that solves for Win, Tie, and Equity percentages for up to 8 players.
 
-This project runs a custom C engine compiled to WebAssembly
+Unlike traditional calculators that rely on server-side processing, this tool runs a custom C engine compiled to WebAssembly. This allows for near-native performance directly within the client's browser, eliminating server latency and operational costs.
 
-Architecture & Engineering Decisions
-The odds calculations is done in low-level C, while the UI is handled by JavaScript.
+## Engineering Decisions
 
-1. The Engine: Optimized C (poker_engine.c)
-I chose C for the backend because poker equity calculation is a combinatorial explosion problem. To calculate equity exactly, millions of hand combinations must be evaluated. JavaScript is a little slow for this level of bitwise manipulation.
+The core odds calculation logic is implemented in low-level C for performance, while the user interface is handled by lightweight JavaScript.
+### The Engine: Optimized C (poker_engine.c)C was selected for the backend to handle the combinatorial explosion inherent in poker equity calculations. To determine equity exactly, millions of hand combinations must be evaluated in milliseconds. JavaScript overhead is generally too high for this level of bitwise manipulation.
+### Core Algorithms:Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to generate a unique product ID for every possible hand configuration.Hash Lookup: The engine uses this unique product ID to look up hand strength in a pre-computed hash table (approx. 1MB). This reduces hand evaluation to an O(1) operation.Bitwise Flush Check: Suits are encoded as bits. The engine checks for flushes using a single bitwise AND operation (&), avoiding expensive loops or string comparisons.
+### Recursive Solver: A Depth-First Search (DFS) algorithm iterates through every possible remaining card in the deck to determine the exact winner for every board state.
 
-Prime Number Mapping: Every card rank is assigned a prime number (2, 3, 5... 41). This allows the program to multiply the prime values of a 5-card hand to get a unique ID for every hand.
+### WebAssembly ImplementationTo achieve a serverless architecture, the C code is compiled to a .wasm binary using Emscripten. This allows the heavy computational logic to execute on the client's CPU, providing the speed of C with the accessibility of a web app.3. User InterfaceThe UI is built using Vanilla JavaScript and HTML. Heavy frameworks like React or Vue were deliberately avoided to keep the project lightweight, dependency-free, and easy to deploy on any static host.
 
-Hash Lookup: using this unique product ID to look up hand strength in a pre-computed hash table (1MB size). This drastically decreases hand evaluation time.
-
-Bitwise Flush Check: Suits are encoded as bits. I check for flushes using a bitwise AND operation (&), avoiding loops or string comparisons.
-
-Recursive Solver: The engine uses a Depth-First Search (DFS) algorithm to iterate through every possible remaining card in the deck to determine the exact winner.
-
-Why Exact Calculation?
-A Monte Carlo simulation requires approx. $10^6$ iterations to achieve a standard error $<0.1\%$. 
-Since the total state space of a pre-flop heads-up hold'em hand is only $\binom{48}{5} \approx 1.7 \times 10^6$ combinations,
-the computational cost of an exact solution is nearly identical to a high-precision simulation. 
-Therefore, I utilize a deterministic Exhaustive Search algorithm to guarantee 0.00% error with no performance penalty
-
-2. Using WebAssembly (Emscripten)
-Instead of hosting the C code on a server (which costs money and adds latency), I compiled it to a .wasm binary using Emscripten.
-
-3. The UI: Javascript and HTML
-! deliberately avoided heavy frameworks like React or Vue for this specific iteration to keep the project lightweight and easy to deploy
-
-
-📂 Project Structure
-Plaintext
-/
-├── index.html        # The Frontend. Handles UI logic, Wasm loading, and display.
-├── poker_engine.c    # The Source. The C logic for hand evaluation and solving.
-├── poker.js          # The Glue. Emscripten-generated file to load Wasm.
-├── poker.wasm        # The Binary. The compiled C code that runs in the browser.
-└── README.md         # Documentation.
+## Why Exact Calculation?
+A Monte Carlo simulation typically requires approximately $10^6$ iterations to achieve a standard error of $<0.1\%$.The total state space of a pre-flop heads-up Hold'em hand is relatively small in computational terms:$$\binom{48}{5} \approx 1,712,304 \text{ combinations}$$Because the computational cost of an exact solution is nearly identical to that of a high-precision simulation, this project utilizes a deterministic Exhaustive Search algorithm. This guarantees 0.00% error with no significant performance penalty compared to a stochastic approach.
