@@ -22,25 +22,18 @@ Bitwise Flush Check: Suits are encoded as bits. I check for flushes using a bitw
 
 Recursive Solver: The engine uses a Depth-First Search (DFS) algorithm to iterate through every possible remaining card in the deck to determine the exact winner.
 
-"worst-case" scenario for computation: Heads-up, Pre-flop.Deck: 52 cards.Known Cards: 4 (2 players $\times$ 2 cards).Unknown Cards: 48.Board Cards to Come: 5.The number of possible future board states is a simple combination:$$C(n, k) = \binom{48}{5} = \frac{48!}{5!(48-5)!} = 1,712,304 \text{ outcomes}$$
+Why Exact Calculation?
+A Monte Carlo simulation requires approx. $10^6$ iterations to achieve a standard error $<0.1\%$. 
+Since the total state space of a pre-flop heads-up hold'em hand is only $\binom{48}{5} \approx 1.7 \times 10^6$ combinations,
+the computational cost of an exact solution is nearly identical to a high-precision simulation. 
+Therefore, I utilize a deterministic Exhaustive Search algorithm to guarantee 0.00% error with no performance penalty
 
-2. The Bridge: WebAssembly (Emscripten)
-Instead of hosting the C code on a server (which costs money and adds latency), we compiled it to a .wasm binary using Emscripten.
+2. Using WebAssembly (Emscripten)
+Instead of hosting the C code on a server (which costs money and adds latency), I compiled it to a .wasm binary using Emscripten.
 
-Zero Latency: The calculation happens on the user's CPU, not a cloud server.
+3. The UI: Javascript and HTML
+! deliberately avoided heavy frameworks like React or Vue for this specific iteration to keep the project lightweight and easy to deploy
 
-Memory Management: The JavaScript frontend manually allocates memory in the Wasm heap (_malloc) to pass hand strings and pointers, ensuring strict type safety between JS and C.
-
-Portability: The result is a static poker.wasm file that can be hosted anywhere (GitHub Pages, S3, Netlify) for free.
-
-3. The UI: "Zero-Build" Vanilla Stack
-We deliberately avoided heavy frameworks like React or Vue for this specific iteration to keep the project lightweight and "instantly deployable."
-
-Tailwind CSS (CDN): Used for rapid, responsive styling without a complex Node.js build chain.
-
-Responsive Design: The layout automatically shifts from a row-based layout (Desktop) to a column-based layout (Mobile) with a persistent bottom card picker.
-
-Canvas-Free Rendering: The poker table and cards are rendered using CSS geometry (Sine/Cosine positioning) rather than an HTML Canvas, keeping the DOM accessible and crisp on high-DPI displays.
 
 📂 Project Structure
 Plaintext
